@@ -1,0 +1,115 @@
+package Analizador;
+import java_cup.runtime.Symbol;
+%% 
+%class Lexico
+%public 
+%line 
+%char 
+%cup 
+%unicode
+%ignorecase
+
+%init{ 
+    yychar = 1; 
+    yyline = 1; 
+    
+%init} 
+numero = [0-9]+
+decimal = [0-9]+("."[0-9]+)?
+id =([A-Za-z]|["_"])+["_"0-9A-Za-z]*
+caracter = \'([^'\n\t]|'\n'|'\t'|'\0'|'\"')?\' 
+cadena = \"([^\"\n\\\\]|\\\"|\\)*\" 
+comentariolinea ="//".*
+comentariomultilinea ="/*""/"*([^*/]|[^*]"/"|"*"[^/])*"*"*"*/"
+idtipo = \(([A-Za-z]|["_"])+["_"0-9A-Za-z]*\)
+%%
+
+{comentariolinea} {} 
+{comentariomultilinea} {}  
+"{" 		 {return new Symbol(sym.llaveabre,yychar,yyline, yytext());}
+"}" 		 {return new Symbol(sym.llavecierra,yychar,yyline, yytext());}
+"("	    	 {return new Symbol(sym.parizq, yychar,yyline , yytext());}
+")"	    	 {return new Symbol(sym.parder, yychar,yyline , yytext());}
+"["	    	 {return new Symbol(sym.corcheteizq, yychar,yyline , yytext());}
+"]"	    	 {return new Symbol(sym.corcheteder, yychar,yyline , yytext());}
+";"	     	 {return new Symbol(sym.pcoma, yychar,yyline , yytext());}
+","			 {return new Symbol(sym.coma, yychar,yyline , yytext());}
+"="	     	 {return new Symbol(sym.igual, yychar,yyline , yytext());}
+"+" 		 {return new Symbol(sym.mas,yychar,yyline, yytext());}
+"-" 		 {return new Symbol(sym.menos,yychar,yyline, yytext());}
+"*" 		 {return new Symbol(sym.por,yychar,yyline, yytext());}
+"/" 		 {return new Symbol(sym.div,yychar,yyline, yytext());}
+"%" 		 {return new Symbol(sym.mod,yychar,yyline, yytext());}
+"pow"		 {return new Symbol(sym.potencia, yychar,yyline , yytext());}
+">"	    	 {return new Symbol(sym.mayor, yychar,yyline , yytext());}
+"<"	    	 {return new Symbol(sym.menor, yychar,yyline , yytext());}
+">="	     {return new Symbol(sym.mayorigual, yychar,yyline , yytext());}
+"<="	     {return new Symbol(sym.menorigual, yychar,yyline , yytext());}
+"!"	     	 {return new Symbol(sym.not, yychar,yyline , yytext());}
+"&&"	     {return new Symbol(sym.and, yychar,yyline , yytext());}
+"||"	     {return new Symbol(sym.or, yychar,yyline , yytext());}
+"=="	     {return new Symbol(sym.igualacion, yychar,yyline , yytext());}
+"!="	     {return new Symbol(sym.diferente, yychar,yyline , yytext());}
+"^" 		 {return new Symbol(sym.xor,yychar,yyline, yytext());}
+"!"	     	 {return new Symbol(sym.not, yychar,yyline , yytext());}
+":"	     	 {return new Symbol(sym.dospuntos, yychar,yyline , yytext());}
+"?"	     	 {return new Symbol(sym.interrogacion, yychar,yyline , yytext());}
+"print"		 {return new Symbol(sym.imprimir, yychar,yyline , yytext());}
+"println"	 {return new Symbol(sym.imprimirconlinea, yychar,yyline , yytext());}
+"if"		 {return new Symbol(sym.si, yychar,yyline , yytext());}	
+"else"		 {return new Symbol(sym.sino, yychar,yyline , yytext());}	
+"while"		 {return new Symbol(sym.mientras, yychar,yyline , yytext());}
+"for"		 {return new Symbol(sym.para, yychar,yyline , yytext());}
+"switch"	 {return new Symbol(sym.seleccion, yychar,yyline , yytext());}
+"case"	     {return new Symbol(sym.caso, yychar,yyline , yytext());}
+"default"	 {return new Symbol(sym.defecto, yychar,yyline , yytext());}
+"break"		 {return new Symbol(sym.quiebre, yychar,yyline , yytext());}
+"continue"	 {return new Symbol(sym.continuar, yychar,yyline , yytext());}
+"do"	     {return new Symbol(sym.hacer, yychar,yyline , yytext());}
+"++"		 {return new Symbol(sym.aumento, yychar,yyline , yytext());}
+"--"		 {return new Symbol(sym.decremento, yychar,yyline , yytext());}
+"int"        {return new Symbol(sym.entero,yychar,yyline, yytext());}
+"char"       {return new Symbol(sym.character,yychar,yyline, yytext());}
+"double"     {return new Symbol(sym.doble,yychar,yyline, yytext());}
+"true"       {return new Symbol(sym.verdadero,yychar,yyline, yytext());}
+"false"      {return new Symbol(sym.falso,yychar,yyline, yytext());}
+"boolean"    {return new Symbol(sym.booleano,yychar,yyline, yytext());}
+"String"     {return new Symbol(sym.cadenaString,yychar,yyline, yytext());}
+"new"        {return new Symbol(sym.nuevo,yychar,yyline, yytext());}
+"printTabla" {return new Symbol(sym.printtabla,yychar,yyline, yytext());}
+"void"    	 {return new Symbol(sym.rvoid,yychar,yyline, yytext());}
+"public"   	 {return new Symbol(sym.publico,yychar,yyline, yytext());}
+"private"    {return new Symbol(sym.privado,yychar,yyline, yytext());}
+"protected"  {return new Symbol(sym.protegido,yychar,yyline, yytext());}
+"static"	 {return new Symbol(sym.estatico,yychar,yyline, yytext());}
+"final"		 {return new Symbol(sym.rfinal,yychar,yyline, yytext());}
+"abstract"	 {return new Symbol(sym.abstracto,yychar,yyline, yytext());}
+"class"		 {return new Symbol(sym.clase,yychar,yyline, yytext());}
+"extends"	 {return new Symbol(sym.extender,yychar,yyline, yytext());}
+"import"	 {return new Symbol(sym.importar,yychar,yyline, yytext());}
+"@"			 {return new Symbol(sym.arroba,yychar,yyline, yytext());}
+"override"	 {return new Symbol(sym.sobreescribir,yychar,yyline, yytext());}
+"return"	 {return new Symbol(sym.retorno,yychar,yyline, yytext());}
+"read_file"	 {return new Symbol(sym.leerarchivo,yychar,yyline, yytext());}
+"this"	     {return new Symbol(sym.este,yychar,yyline, yytext());}
+"."			 {return new Symbol(sym.punto,yychar,yyline, yytext());}
+"null"		 {return new Symbol(sym.nulo,yychar,yyline, yytext());}
+"graph"	     {return new Symbol(sym.graficar,yychar,yyline, yytext());}
+"str"	     {return new Symbol(sym.caststr,yychar,yyline, yytext());}
+"toDouble"   {return new Symbol(sym.todouble,yychar,yyline, yytext());}
+"toInt"	     {return new Symbol(sym.toint,yychar,yyline, yytext());}
+"toChar"	 {return new Symbol(sym.tochar,yychar,yyline, yytext());}
+"super"	     {return new Symbol(sym.superior,yychar,yyline, yytext());}
+"write_file" {return new Symbol(sym.escribirarchivo,yychar,yyline, yytext());}
+"read" 		 {return new Symbol(sym.leer,yychar,yyline, yytext());}
+
+\n {yychar=1;}
+[ \t\r\f]+       { /* Se ignoran */}
+{numero}           {return new Symbol(sym.numero, yychar,yyline,yytext());}
+{id}           	   {return new Symbol(sym.identificador,yychar,yyline, yytext());}
+{caracter}         {return new Symbol(sym.caracter,yychar,yyline, yytext());}
+{cadena}           {return new Symbol(sym.cadena,yychar,yyline, yytext());}
+{decimal}          {return new Symbol(sym.decimal,yychar,yyline, yytext());}
+. {
+    System.out.println("Este es un error lexico: "+yytext()+", en la linea: "+yyline+", en la columna: "+yychar);
+}

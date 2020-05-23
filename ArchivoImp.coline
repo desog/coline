@@ -1,0 +1,9 @@
+
+
+public class archivoImp{
+	
+	public void status(){
+		int a  = 2;
+		int b = 3;
+	}
+}

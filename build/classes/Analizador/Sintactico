@@ -1,0 +1,760 @@
+package Analizador;
+import java_cup.runtime.Symbol;
+import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.List;
+import TablaSimbolos.Simbolo;
+import ast.expresiones.Exp;
+import ast.expresiones.Literal;
+import ast.expresiones.operaciones.Aritmeticas;
+import ast.instrucciones.Asignacion;
+import ast.expresiones.Identificador;
+import ast.instrucciones.Bloque;
+import ast.instrucciones.Declaracion;
+import ast.instrucciones.Ins;
+import ast.Nodo;
+import ast.Ast;
+import ast.instrucciones.PrintTabla;
+import ast.expresiones.operaciones.Operacion;
+import ast.expresiones.operaciones.Relacionales;
+import ast.expresiones.operaciones.Logicas;
+import ast.expresiones.Tipo;
+import ast.expresiones.OpPostfijo;
+import ast.instrucciones.Break;
+import ast.instrucciones.While;
+import ast.expresiones.operaciones.Ternario;
+import ast.instrucciones.Print;
+import ast.instrucciones.If;
+import ast.expresiones.Tipo.Tipos;
+import ast.instrucciones.ElseIf;
+import ast.instrucciones.ElseIfElse;
+import ast.expresiones.OpPrefijo;
+import ast.instrucciones.Continue;
+import ast.instrucciones.For;
+import ast.instrucciones.DoWhile;
+import ast.instrucciones.Switch;
+import ast.instrucciones.Casos;
+import ast.instrucciones.Defecto;
+import ast.instrucciones.DeclaArreglo;
+import ast.expresiones.OpPrefijoSuma;
+import ast.expresiones.Casteo;
+import ast.expresiones.Instancia;
+import ast.instrucciones.Var;
+import Herramientas.ArbolArreglos.Nodon;
+import Herramientas.ArbolArreglos.Arreglo;
+import ast.instrucciones.AsignacionArreglo;
+import ast.expresiones.AccesoArreglo;
+import ast.instrucciones.Parametro;
+import ast.instrucciones.Modificador;
+import ast.instrucciones.Metodo;
+import ast.instrucciones.Constructor;
+import ast.expresiones.Llamada;
+import ast.instrucciones.EncabezadoMetodo;
+import ast.instrucciones.Sentencias;
+import ast.instrucciones.ForEach;
+import ast.expresiones.Retorno;
+import ast.expresiones.LeerArchivo;
+import ast.instrucciones.Clase;
+import ast.expresiones.InstanciaClase;
+import ast.instrucciones.Importar;
+import ast.expresiones.Acceso;
+import ast.expresiones.AccesoIzq;
+import ast.expresiones.This;
+import ast.instrucciones.DeclaracionGlobal;
+import ast.instrucciones.AsignacionAcceso;
+import ast.instrucciones.Graficar;
+import ast.instrucciones.Super;
+import ast.instrucciones.LeerConsola;
+import ast.expresiones.Null;
+import ast.expresiones.ToChar;
+import ast.expresiones.ToInt;
+import ast.expresiones.ToDouble;
+import ast.expresiones.Str;
+import ast.expresiones.EscribirArchivo;
+import ast.expresiones.OpPostfijoArreglos;
+
+parser code
+{:
+public static Ast padre;
+public int cont = 0;
+public static List<String> ListaErroresSintacticos = new ArrayList<String>();
+
+    /**Metodo al que se llama automáticamente ante algún error sintactico.*/
+    public void syntax_error(Symbol s){
+        ListaErroresSintacticos.add("ERROR SINTACTICO, Error en la Línea " + (s.right) +" Columna "+(s.left+1) +". Identificador "
+        +s.value + " no reconocido.");
+    }
+
+    /**Metodo al que se llama en el momento en que ya no es posible una recuperación de
+    errores.*/
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{
+        ListaErroresSintacticos.add("ERROR SINTACTICO, Error en la Línea " + (s.right) +" Columna "+(s.left+1) +". Identificador "
+        +s.value + " no reconocido.");
+        /*System.out.println("Error en la Línea " + (s.right)+ " Columna "+s.left+". Identificador " +
+        s.value + " no reconocido.");*/
+    }
+:}
+terminal String numero,caracter,llaveabre,llavecierra,igual,identificador,entero,character,pcoma,printtabla,parizq,parder;
+terminal String mas,menos,por,div,xor,menosu,menor,mayor,mayorigual,menorigual,diferente,or,and,igualacion,not;
+terminal String decimal,cadena,doble,cadenaString,verdadero,falso,booleano,aumento,decremento,quiebre,mientras,imprimir;
+terminal String interrogacion,dospuntos,si,imprimirconlinea,sino,para,continuar,hacer,seleccion,caso,defecto,mod,potencia,coma;
+terminal String casteo,corcheteizq,corcheteder,nuevo,rvoid,publico,privado,protegido,estatico,rfinal,abstracto,importar,clase,extender;
+terminal String arroba,sobreescribir,retorno,leerarchivo,este,punto,nulo,graficar,caststr,todouble,toint,tochar,superior;
+terminal String leer,escribirarchivo;
+
+non terminal D,S, E,B,DEC,T,EXP,PR,ASIGNACION,IMPRIMIR,MIENTRAS,BREAK,OPPOSTFIJOS,SI,SINO,OPCIONSI,PARA,PARAINIT,CONTINUAR,DOWHILE;
+non terminal SWITCH,BLOQUESWITCHST,BLOQUESWITCHSIMPLE,EXPRESIONCASTEO,TIPOSPOSIBLES,INITARRAY,INSTANCIAS;
+non terminal LISTCORCHETES,LISTACORCHETESVALOR,VAR,VARDEC,VARDECID,VARINIT,OPARREGLO,LCONTARREGLO,CONTARREGLO;
+non terminal LEXPRESIONES1,LEXPRESIONES,INICIO,CUERPOCONLINE,COLINE,IMPORTAR,CLASE,LMODIFICADORES,EXTENDER,OPCIONESCLASE,MODIFICADORES;
+non terminal TMODIFICADORES,CUERPOCLASE,CONSTRUCTOR,LCONTENIDOMETODO1,LCONTENIDOMETODO,LPARAMETROS1,PARAMETROS,PARAM;
+non terminal SENTENCIAS,NATIVAS,NOMBREOBJETO,CONTENIDOCLASE,METODO,LPARAMETROS,CONTENIDOMETODO,DECMETODO,ENCABEZADOMETODO;
+non terminal OPCIONMETODO,LLAMADA,LISTPARAMETROSLLAMADA,RETORNO,LLAMADAEXP,PARACADA,ACCESO,AUXILIAR,ARGUMENTOS,ACCESOIZQ,GRAFICAR;
+non terminal CASTEOEXPLICITO,ESCRIBIRARCHIVO,LECTURACONSOLA;
+//precedencia condicionales
+precedence right casteo;
+precedence right interrogacion,dospuntos;
+precedence left  or;
+precedence left  and;
+precedence left  xor;
+precedence left diferente,igualacion;
+precedence left  menor,mayor,menorigual,mayorigual;
+
+//Precedencia aritméticas
+precedence left  mas,menos;
+precedence left  por,div,mod;
+precedence left potencia;
+precedence right not;
+precedence right menosu;
+
+
+
+start with  D;
+
+
+D::= INICIO:n1{:LinkedList<Nodo> lista = (LinkedList<Nodo>)n1;
+		parser.padre = new Ast(lista);
+		RESULT = lista;:};		
+
+INICIO::= CUERPOCONLINE:n1{:RESULT=n1;:};
+
+CUERPOCONLINE::= CUERPOCONLINE:n1 COLINE:n2 {:LinkedList<Nodo> lista = (LinkedList<Nodo>)n1;
+	lista.add((Nodo)n2);
+	RESULT=lista;
+	:}
+|COLINE:n1{:
+	LinkedList<Nodo> lista = new LinkedList<Nodo>();
+		lista.add((Nodo)n1);
+	RESULT = lista;:}
+|CUERPOCONLINE error{::}
+|error{::};
+
+COLINE::= IMPORTAR:n1{:RESULT=n1;:}
+|CLASE:n1{:RESULT = n1;:};
+
+IMPORTAR::= importar cadena:n1 pcoma{:RESULT = new Importar((String)n1);:};
+
+CLASE::= LMODIFICADORES:n1 clase identificador:n2 EXTENDER:n3 llaveabre OPCIONESCLASE:n4 {:
+	RESULT = new Clase((String)n2,(LinkedList<Modificador> )n1,(String)n3,(LinkedList<Nodo>)n4,n2right);:}
+|clase identificador:n2 EXTENDER:n3 llaveabre OPCIONESCLASE:n4 {:
+LinkedList<Modificador> lista = new LinkedList<Modificador>();
+RESULT= new Clase((String)n2,lista,(String)n3,(LinkedList<Nodo>)n4,n2right);
+	:};
+
+EXTENDER::= extender identificador:n1{:RESULT= n1;:}
+|{:String n = "";
+RESULT=n;:};
+
+LMODIFICADORES::= MODIFICADORES:n1{:RESULT=n1;:};
+
+MODIFICADORES::= MODIFICADORES:n1 TMODIFICADORES:n2{:LinkedList<Modificador> lista = (LinkedList<Modificador>)n1;
+	lista.add((Modificador)n2);
+	RESULT = lista;:}
+|TMODIFICADORES:n1{:LinkedList<Modificador> lista = new LinkedList<Modificador>();
+	lista.add((Modificador)n1);
+	RESULT =lista;:};
+
+TMODIFICADORES::= publico {:RESULT= new Modificador(Modificador.visibilidad.PUBLIC);:}
+|privado{:RESULT= new Modificador(Modificador.visibilidad.PRIVATE);:}
+|protegido{:RESULT= new Modificador(Modificador.visibilidad.PROTECTED);:}
+|estatico{:RESULT = new Modificador(Modificador.Modificadores.STATIC);:}
+|rfinal{:RESULT = new Modificador(Modificador.Modificadores.FINAL);:}
+|abstracto{:RESULT = new Modificador(Modificador.Modificadores.ABSTRACT);:};
+
+OPCIONESCLASE::= CONTENIDOCLASE:n1 llavecierra:n{:RESULT = n1;:}
+|llavecierra{::};
+
+CONTENIDOCLASE::= CONTENIDOCLASE:n1 CUERPOCLASE:n2{:LinkedList<Nodo> lista = (LinkedList<Nodo>) n1;
+				if(n2 instanceof Ins){
+					lista.add((Ins)n2);
+				}else if(n2 instanceof Exp){
+					lista.add((Exp)n2);
+				}
+				
+				RESULT = lista;:}
+|CUERPOCLASE:n1{:LinkedList<Nodo> lista = new LinkedList<Nodo>();
+			if(n1 instanceof Ins){
+				lista.add((Ins)n1);
+			}else if(n1 instanceof Exp){
+				lista.add((Exp)n1);
+			}
+			
+			RESULT = lista;:};
+
+CUERPOCLASE::= CLASE{::}
+|METODO:n1{:RESULT=n1;:}
+|CONSTRUCTOR:n1{:RESULT=n1;:}
+|DEC:n1{:RESULT=n1;:};
+
+METODO::= LMODIFICADORES:n1 T:n2 ENCABEZADOMETODO:n3 OPCIONMETODO:n4{:
+	EncabezadoMetodo encabezado = (EncabezadoMetodo)n3;
+	RESULT= new Metodo((LinkedList<Modificador>)n1,(LinkedList<Parametro>)encabezado.getParametros(),(int)encabezado.getDimensiones(),(Sentencias)n4,(Tipo)n2,(String)encabezado.getIdentificador(),(int)n2right);
+	:}
+|arroba sobreescribir LMODIFICADORES T ENCABEZADOMETODO OPCIONMETODO{::}
+|T:n2 ENCABEZADOMETODO:n3 OPCIONMETODO:n4{:EncabezadoMetodo encabezado = (EncabezadoMetodo)n3;
+	LinkedList<Modificador> lista = new LinkedList<Modificador>();
+	lista.add(new Modificador(Modificador.visibilidad.PUBLIC));
+	RESULT= new Metodo(lista,(LinkedList<Parametro>)encabezado.getParametros(),(int)encabezado.getDimensiones(),(Sentencias)n4,(Tipo)n2,(String)encabezado.getIdentificador(),(int)n2right);
+	:};
+
+ENCABEZADOMETODO::= identificador:n1 parizq LPARAMETROS1:n2 parder {:RESULT = new EncabezadoMetodo((String)n1,(LinkedList<Parametro>)n2,0);:}
+|LISTCORCHETES:n1 identificador:n2 parizq LPARAMETROS1:n3 parder {:RESULT = new EncabezadoMetodo((String)n2,(LinkedList<Parametro>)n3,(int)n1);:};
+
+OPCIONMETODO::= llaveabre LCONTENIDOMETODO1:n1{:RESULT=n1;:}
+|pcoma{::};
+
+CONSTRUCTOR::= LMODIFICADORES:n1 identificador:n2 parizq LPARAMETROS1:n3 parder llaveabre LCONTENIDOMETODO1:n4{:
+	RESULT= new Constructor(new Tipo(Tipo.Tipos.VOID),(String)n2,(LinkedList<Parametro>)n3,(Sentencias)n4,(LinkedList<Modificador>)n1,(int)n2right);
+	:}
+	|identificador:n2 parizq LPARAMETROS1:n3 parder llaveabre LCONTENIDOMETODO1:n4{:
+	RESULT= new Constructor(new Tipo(Tipo.Tipos.VOID),(String)n2,(LinkedList<Parametro>)n3,(Sentencias)n4,new LinkedList<Modificador>(),(int)n2right);
+	:};
+
+LPARAMETROS1::= LPARAMETROS:n1{:RESULT=n1;:}
+|{:LinkedList<Parametro> lista = new LinkedList<Parametro>();
+	RESULT = lista;:};
+
+LPARAMETROS::= LPARAMETROS:n1 coma PARAMETROS:n2{:LinkedList<Parametro> lista = (LinkedList<Parametro>)n1;
+	lista.add((Parametro)n2);
+	RESULT = lista;
+	:}
+|PARAMETROS:n1{:LinkedList<Parametro> lista = new LinkedList<Parametro>();
+	lista.add((Parametro)n1);
+	RESULT=lista;
+	:}; 
+
+
+PARAMETROS::= PARAM:n1{:RESULT = n1;:}
+|rfinal PARAM:n1{:Parametro param = (Parametro)n1;
+	param.setParamfinal(true);
+	RESULT = param;
+	:};
+
+PARAM::= T:n1 VARDECID:n2{:
+	if(n2 instanceof String){
+		RESULT= new Parametro((Tipo)n1,(String)n2);		
+	}else{
+		RESULT= new Parametro((Tipo)n1,(Arreglo)n2);
+	}
+:};
+
+LCONTENIDOMETODO1::= LCONTENIDOMETODO:n1 llavecierra:n{:RESULT = new Sentencias((LinkedList<Nodo>)n1,nright);:}
+|llavecierra{::};
+
+LCONTENIDOMETODO::= LCONTENIDOMETODO:n1 CONTENIDOMETODO:n2{:LinkedList<Nodo> lista = (LinkedList<Nodo>) n1;
+				if(n2 instanceof Ins){
+					lista.add((Ins)n2);
+				}else if(n2 instanceof Exp){
+					lista.add((Exp)n2);
+				}
+				
+				RESULT = lista;:}
+|CONTENIDOMETODO:n1{:LinkedList<Nodo> lista = new LinkedList<Nodo>();
+			if(n1 instanceof Ins){
+				lista.add((Ins)n1);
+			}else if(n1 instanceof Exp){
+				lista.add((Exp)n1);
+			}
+			
+			RESULT = lista;
+				:}
+|CONTENIDOMETODO error{::}
+|error{::};
+
+CONTENIDOMETODO::= CLASE{::}
+|SENTENCIAS:n1{:RESULT = n1;:}
+|NATIVAS{::}
+|NOMBREOBJETO:n1{:RESULT=n1;:};
+
+
+NOMBREOBJETO::= superior:n parizq LISTPARAMETROSLLAMADA:n1 parder pcoma{:
+	RESULT = new Super((LinkedList<Exp>)n1,nright);
+	:};
+
+
+SENTENCIAS::= DECMETODO:n1{:RESULT = n1;:}
+	|PR:n1{:RESULT=n1;:}
+	|ASIGNACION:n1{:RESULT = n1;:}
+	|IMPRIMIR:n1{:RESULT = n1;:}
+	|MIENTRAS:n1{:RESULT = n1;:}
+	|BREAK:n1{:RESULT=n1;:}
+	|OPPOSTFIJOS:n1{:RESULT = n1;:}
+	|SI:n1{:RESULT = n1;:}
+	|CONTINUAR:n1{:RESULT= n1;:}
+	|PARA:n1{:RESULT= n1;:}
+	|SWITCH:n1{:RESULT= n1;:}
+	|DOWHILE:n1{:RESULT=n1;:}
+	|LLAMADA:n1{:RESULT=n1;:}
+	|PARACADA:n1{:RESULT=n1;:}
+	|ACCESOIZQ:n1 pcoma{:RESULT=n1;:}
+	|GRAFICAR:n1{:RESULT=n1;:}
+	|ESCRIBIRARCHIVO:n1{:RESULT=n1;:}
+	|LECTURACONSOLA:n1{:RESULT=n1;:}
+	|RETORNO:n1{:RESULT=n1;:};
+
+	LECTURACONSOLA::= leer parizq:n identificador:n1 parder pcoma{:
+		RESULT= new LeerConsola(new Identificador((String)n1+"|variable",nright),nright);
+		:};
+
+ESCRIBIRARCHIVO::= escribirarchivo:n parizq EXP:n1 coma EXP:n2 parder{:
+		RESULT= new EscribirArchivo((Exp)n1,(Exp)n2,nright);
+	:};
+
+GRAFICAR::= graficar:n parizq EXP:n1 coma EXP:n2 parder pcoma{:
+		RESULT= new Graficar((Exp)n1,(Exp)n2,nright);
+	:};
+
+
+PARACADA::= para parizq PARAM:n1 dospuntos:n EXP:n2 parder	llaveabre LCONTENIDOMETODO:n4 llavecierra{:
+	RESULT = new ForEach((Parametro)n1,(Exp)n2,(LinkedList<Nodo>)n4,nright);
+	:};
+
+RETORNO::= retorno:n EXP:n1 pcoma{:RESULT = new Retorno((Exp)n1,nright);:}
+|retorno:n pcoma{:RESULT = new Retorno(null,nright);:};
+
+SWITCH::= seleccion:n parizq EXP:n1 parder llaveabre BLOQUESWITCHST:n2 llavecierra{:
+	RESULT = new Switch((Exp)n1,(LinkedList<Ins>)n2,nright);
+:};
+
+
+BLOQUESWITCHST::= BLOQUESWITCHST:n1 BLOQUESWITCHSIMPLE:n2{:LinkedList<Ins> lista = (LinkedList<Ins>)n1;
+	lista.add((Ins)n2);
+	RESULT = lista;
+:}
+|BLOQUESWITCHSIMPLE:n1{:LinkedList<Ins> lista = new LinkedList<Ins>();
+	lista.add((Ins)n1);
+	RESULT = lista;
+:} ;
+
+BLOQUESWITCHSIMPLE::= caso:n EXP:n1 dospuntos LCONTENIDOMETODO:n2{: RESULT = new Casos((Exp)n1,(LinkedList<Nodo>)n2,nright);:}
+| defecto:n dospuntos LCONTENIDOMETODO:n1{:RESULT = new Defecto((LinkedList<Nodo>)n1,nright);:};
+
+
+DOWHILE::= hacer:n llaveabre LCONTENIDOMETODO:n1 llavecierra mientras parizq EXP:n2 parder pcoma{:
+	RESULT = new DoWhile((Exp)n2,(LinkedList<Nodo>)n1,nright);
+:};
+
+PARA::= para parizq:n PARAINIT:n1  EXP:n2 pcoma EXP:n3 parder llaveabre LCONTENIDOMETODO:n4 llavecierra{:
+	RESULT = new For((Ins)n1,(Exp)n2,(Exp)n3,(LinkedList<Nodo>)n4,nright);
+:};
+
+PARAINIT::= DEC:n1{:
+	RESULT = n1;
+:}
+|ASIGNACION:n1{:
+	RESULT = n1;
+:};
+
+SI::= si:n parizq EXP:n1 parder llaveabre LCONTENIDOMETODO:n2 llavecierra{:
+	RESULT = new If((Exp)n1,(LinkedList<Nodo>)n2,nright);
+:}
+|si:n parizq EXP:n1 parder llaveabre LCONTENIDOMETODO:n2 llavecierra OPCIONSI:n3{:
+	RESULT = new ElseIf((Exp)n1,(LinkedList<Nodo>)n2,(LinkedList<Nodo>)n3,nright);
+:}
+|si:n parizq EXP:n1 parder llaveabre LCONTENIDOMETODO:n2 llavecierra OPCIONSI:n3 SINO:n4{:
+       RESULT = new ElseIfElse((Exp)n1,(LinkedList<Nodo>)n2,(LinkedList<Nodo>)n3,(LinkedList<Nodo>)n4,nright);         
+:}
+|si:n parizq EXP:n1 parder llaveabre LCONTENIDOMETODO:n2 llavecierra SINO:n3 {:
+	RESULT = new If((Exp)n1,(LinkedList<Nodo>)n2,(LinkedList<Nodo>)n3,nright);
+    :};
+
+OPCIONSI::= OPCIONSI:n1 sino si:n parizq EXP:n2 parder llaveabre LCONTENIDOMETODO:n3 llavecierra{:
+	LinkedList<If>listaif = (LinkedList<If>) n1;
+	listaif.add(new If((Exp)n2,(LinkedList<Nodo>)n3,nright));
+	RESULT = listaif;
+:}
+			|sino si:n parizq EXP:n1 parder llaveabre LCONTENIDOMETODO:n2 llavecierra{:
+               LinkedList<If> listaif= new LinkedList<If>();
+                listaif.add(new If((Exp)n1,(LinkedList<Nodo>)n2,nright));
+                RESULT = listaif;
+             :};
+
+SINO::=    sino:n llaveabre LCONTENIDOMETODO:n2 llavecierra{:
+			RESULT = n2;
+            :};
+
+OPPOSTFIJOS::=identificador:n1 aumento:n pcoma{:RESULT = new OpPostfijo(new Identificador((String)n1+"|variable",nright),true,nright);:}
+    | identificador:n1 decremento:n pcoma{:RESULT = new OpPostfijo(new Identificador((String)n1+"|variable",nright),false,nright);:}
+    | identificador:n1 LISTACORCHETESVALOR:n2 aumento:n pcoma{:RESULT = new OpPostfijoArreglos(new Identificador((String)n1+"|arreglo",nright),(LinkedList<Exp>)n2,true,nright);:}
+    | identificador:n1 LISTACORCHETESVALOR:n2 decremento:n pcoma{:RESULT = new OpPostfijoArreglos(new Identificador((String)n1+"|arreglo",nright),(LinkedList<Exp>)n2,false,nright);:};
+
+MIENTRAS::= mientras:n parizq EXP:n1 parder llaveabre LCONTENIDOMETODO:n2 llavecierra{:
+			RESULT = new While((LinkedList<Nodo>)n2,(Exp)n1,nright);
+			:};
+
+BREAK::= quiebre:n pcoma{:
+	RESULT = new Break(nright);
+:};
+
+CONTINUAR::= continuar:n pcoma{:
+	RESULT = new Continue(nright);
+:};
+
+IMPRIMIR::= imprimir:n parizq EXP:n1 parder pcoma{:
+			RESULT = new Print((Exp) n1,false,nright);
+			:}
+			|imprimirconlinea:n parizq EXP:n1 parder pcoma{:
+			RESULT = new Print((Exp) n1,true,nright);
+			:};
+
+PR::= printtabla parizq parder pcoma{:
+		RESULT = new PrintTabla();
+	:};
+
+
+DEC::= LMODIFICADORES:n3 T:n1 VAR:n2 pcoma:n{:
+	RESULT = new DeclaracionGlobal((LinkedList<Modificador>)n3,(Tipo)n1, (LinkedList<Var>)n2,nright);:}
+|T:n1 VAR:n2 pcoma:n{:
+	LinkedList<Modificador> lista = new LinkedList<Modificador>();
+	Modificador mod = new Modificador(Modificador.visibilidad.PUBLIC);
+	lista.add(mod);
+	RESULT = new DeclaracionGlobal(lista,(Tipo)n1, (LinkedList<Var>)n2,nright);:};
+
+
+DECMETODO::= T:n1 VAR:n2 pcoma:n{:RESULT = new Declaracion((Tipo)n1, (LinkedList<Var>)n2,nright);:};
+
+VAR::= VAR:n1 coma VARDEC:n2{:
+LinkedList<Var> lista = (LinkedList<Var>)n1;
+lista.add((Var)n2);
+RESULT = lista;
+:}
+|VARDEC:n1{:
+LinkedList<Var> lista = new LinkedList<Var>();
+lista.add((Var)n1);
+RESULT = lista;:}
+|VAR error{::}
+|error{::};
+
+VARDEC::= VARDECID:n1 igual VARINIT:n2{:
+	if(n1 instanceof String){
+		Var v = new Var((String)n1,(Exp)n2);
+		RESULT=v;
+	}else{
+		Arreglo arr = (Arreglo)n1;
+		Var v = new Var((String)arr.getId(),(Exp)n2,(int)arr.getDimensiones());
+		RESULT = v;
+	}
+
+:}
+|VARDECID:n1{:
+if(n1 instanceof String){
+Var v = new Var((String)n1,null);
+RESULT=v;	
+}else{
+	Arreglo arr = (Arreglo)n1;
+	Var v = new Var((String)arr.getId(),null,(int)arr.getDimensiones());
+	RESULT = v;
+}
+:};
+
+VARDECID::= identificador:n1 LISTCORCHETES:n2{:RESULT = new Arreglo((int)n2,(String)n1);:}
+|identificador:n1{:RESULT= (String)n1;:};
+
+VARINIT::= EXP:n1{:RESULT= (Exp)n1;:}
+|INITARRAY:n1{:RESULT = (Exp)n1;:};
+
+INITARRAY::= llaveabre OPARREGLO:n1 llavecierra {:if(n1 instanceof List){
+		Nodon n = new Nodon((LinkedList<Nodon>)n1,Nodon.etiquetaNodo.INTERIOR);
+		RESULT = n;	
+	}else{
+		RESULT = n1;
+	}:};
+
+OPARREGLO::= LCONTARREGLO:n1{:RESULT = n1;:}
+|LEXPRESIONES1:n1{:RESULT = n1;:};
+
+LCONTARREGLO::= LCONTARREGLO:n1 coma CONTARREGLO:n2{:
+LinkedList<Nodon> lista = (LinkedList<Nodon>) n1;
+lista.add((Nodon)n2);
+RESULT = lista;
+:}
+|CONTARREGLO:n1{:LinkedList<Nodon> lista = new LinkedList<Nodon>();
+lista.add((Nodon)n1);
+RESULT = lista;
+:}
+|LCONTARREGLO error{::}
+|error{::};
+
+CONTARREGLO::= llaveabre LEXPRESIONES1:n1 llavecierra{:
+RESULT = n1;
+:}
+|llaveabre LCONTARREGLO:n1 llavecierra{:Nodon n = new Nodon((LinkedList<Nodon>)n1,Nodon.etiquetaNodo.INTERIOR);
+	RESULT=n;
+	:};
+
+LEXPRESIONES1::= LEXPRESIONES:n1{: Nodon n = new Nodon((LinkedList<Nodon>)n1,Nodon.etiquetaNodo.INTERIOR);
+RESULT = n;
+:}
+
+|{:LinkedList<Exp> lista= new LinkedList<Exp>();
+RESULT = lista;:};
+
+LEXPRESIONES::= LEXPRESIONES:n1 coma EXP:n2{:LinkedList<Nodon> lista = (LinkedList<Nodon>)n1;
+lista.add(new Nodon(Nodon.etiquetaNodo.HOJA,(Exp)n2));
+RESULT = lista;:}
+
+|EXP:n1{:LinkedList<Nodon> lista = new LinkedList<Nodon>();
+lista.add(new Nodon(Nodon.etiquetaNodo.HOJA,(Exp)n1));
+RESULT = lista;:};
+//-----------------------------------------------------------------------------------------------------------------------
+LISTCORCHETES::= LISTCORCHETES:n1 corcheteizq corcheteder{:
+int contador = (int)n1 + 1;
+RESULT= contador;:}
+|corcheteizq corcheteder{:
+int contador = 1;
+RESULT=contador;:};
+
+ 
+ ASIGNACION::= identificador:n1 igual EXP:n2 pcoma{:
+ 	RESULT = new Asignacion(new Identificador((String)n1+"|variable",n1right),(Exp)n2,n1right);
+ :}
+ |identificador:n1 LISTACORCHETESVALOR:n2 igual EXP:n3 pcoma{:
+ 	RESULT = new AsignacionArreglo(new Identificador((String)n1+"|arreglo",n1right),(LinkedList<Exp>)n2,(Exp)n3,n1right);
+ :};
+
+  
+  ACCESOIZQ::= identificador:n1 punto:n ACCESO:n2 {:LinkedList<Exp> lista = (LinkedList<Exp>)n2;
+		lista.add((Exp) new Identificador((String)n1+"|variable",nright));
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+		RESULT= new AccesoIzq(lista,nright); 
+		:}
+	|identificador:n1 punto:n ACCESO:n2 igual EXP:n3 {:LinkedList<Exp> lista = (LinkedList<Exp>)n2;
+		lista.add((Exp) new Identificador((String)n1+"|variable",nright));
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+		RESULT= new AsignacionAcceso(new AccesoIzq(lista,nright),(Exp)n3,nright);  
+		:}
+	|LLAMADAEXP punto ACCESO {::}
+
+	|este punto:n ACCESO:n2 igual EXP:n3 {:LinkedList<Exp> lista = (LinkedList<Exp>)n2;
+		lista.add((Exp) new This());
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+		RESULT= new AsignacionAcceso(new AccesoIzq(lista,nright),(Exp)n3,nright);
+		:}
+
+	|este punto:n ACCESO:n2 {:LinkedList<Exp> lista = (LinkedList<Exp>)n2;
+		lista.add((Exp) new This());
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+		RESULT = new AccesoIzq(lista,nright);
+		:};
+
+
+EXP::= EXP:n1 mas:n EXP:n2{:
+		RESULT = new Aritmeticas((Exp)n1,(Exp)n2,Operacion.Operador.MAS,nright);
+	:}
+	|EXP:n1 menos:n EXP:n2{:
+		RESULT = new Aritmeticas((Exp)n1,(Exp)n2,Operacion.Operador.MENOS,nright);
+	:}
+	|EXP:n1 por:n EXP:n2{:
+		RESULT = new Aritmeticas((Exp)n1,(Exp)n2,Operacion.Operador.POR,nright);
+	:}
+	|EXP:n1 div:n EXP:n2{:
+		RESULT = new Aritmeticas((Exp)n1,(Exp)n2,Operacion.Operador.DIV,nright);
+	:}
+	|EXP:n1 mod:n EXP:n2{:
+		RESULT = new Aritmeticas((Exp)n1,(Exp)n2,Operacion.Operador.MOD,nright);
+	:}
+	
+	|EXP:n1 mayor:n EXP:n2 {:
+        RESULT = new Relacionales((Exp)n1,(Exp)n2,Operacion.Operador.MAYOR,nright);        
+    :}
+    |EXP:n1 igualacion:n EXP:n2 {:
+        RESULT = new Relacionales((Exp)n1,(Exp)n2,Operacion.Operador.IGUALACION,nright);             
+    :}
+    |EXP:n1 diferente:n EXP:n2 {:
+        RESULT = new Relacionales((Exp)n1,(Exp)n2,Operacion.Operador.DIFERENTE,nright);             
+    :}
+    |EXP:n1 interrogacion:n EXP:n2 dospuntos EXP:n3{: RESULT= new Ternario((Exp)n2,(Exp)n3,(Exp)n1,nright);
+    :}
+    |EXP:n1 xor:n EXP:n2{:
+		RESULT = new Logicas((Exp)n1,(Exp)n2,Operacion.Operador.XOR,nright);
+	:}
+    |EXP:n1 and:n EXP:n2 {:
+        RESULT = new Logicas((Exp)n1,(Exp)n2,Operacion.Operador.AND,nright);         
+    :}
+    |EXP:n1 or:n EXP:n2 {:
+        RESULT = new Logicas((Exp)n1,(Exp)n2,Operacion.Operador.OR,nright);        
+    :}
+    |EXP:n1 menor:n EXP:n2 {:
+       RESULT = new Relacionales((Exp)n1,(Exp)n2,Operacion.Operador.MENOR,nright);             
+    :}
+    |EXP:n1 menorigual:n EXP:n2 {:
+       RESULT = new Relacionales((Exp)n1,(Exp)n2,Operacion.Operador.MENORIGUAL,nright);              
+    :}
+    |EXP:n1 mayorigual:n EXP:n2 {:
+       RESULT = new Relacionales((Exp)n1,(Exp)n2,Operacion.Operador.MAYORIGUAL,nright);              
+    :}
+    |not:n EXP:n1 {:
+          RESULT = new OpPrefijo((Exp)n1,Operacion.Operador.NOT,nright);         
+    :}
+    |menos:n EXP:n1 {:
+   		RESULT = new OpPrefijo((Exp)n1,Operacion.Operador.MENOSU,nright);            
+    :}%prec menosu
+    |nulo:n1{:RESULT = new Null();:}
+    |potencia:n parizq EXP:n1 coma EXP:n2 parder{:RESULT = new Aritmeticas((Exp)n1,(Exp)n2,Operacion.Operador.POTENCIA,nright);:}
+    |identificador:n1 aumento:n{:RESULT = new OpPostfijo(new Identificador((String)n1+"|variable",n1right),true,nright);:}
+    |identificador:n1 decremento:n{:RESULT = new OpPostfijo(new Identificador((String)n1+"|variable",n1right),false,nright);:}
+    |aumento:n identificador:n1 {:RESULT = new OpPrefijoSuma(new Identificador((String)n1+"|variable",n1right),true,nright);:}
+    |decremento:n identificador:n1 {:RESULT = new OpPrefijoSuma(new Identificador((String)n1+"|variable",n1right),false,nright);:}
+	|numero:n1{:RESULT = new Literal(n1, new Tipo(Tipos.INT),n1right);:}
+	|caracter:n1{:RESULT = new Literal(n1.replaceAll("'", ""), new Tipo(Tipos.CHAR),n1right);:}
+	|cadena:n1{:
+		String cad = (String)n1;
+		cad=cad.substring(1, cad.length()-1);
+		RESULT = new Literal(cad, new Tipo(Tipos.STRING),n1right);:}
+	|decimal:n1{:RESULT = new Literal(n1, new Tipo(Tipos.DOUBLE),n1right);:}
+	|verdadero:n1{:RESULT = new Literal(true, new Tipo(Tipos.BOOLEAN),n1right);:}
+	|falso:n1{:RESULT = new Literal(false, new Tipo(Tipos.BOOLEAN),n1right);:}
+	|parizq EXP:n1 parder{:RESULT=n1;:}
+	|identificador:n1 {:RESULT = new Identificador((String)n1+"|variable",n1right);:}
+	|nuevo INSTANCIAS:n1 {:RESULT= n1;:}
+	|parizq EXP parder EXP {::}
+	|identificador:n1 LISTACORCHETESVALOR:n2{:RESULT = new AccesoArreglo(new Identificador((String)n1+"|arreglo",n1right),(LinkedList<Exp>)n2,n1right);:}
+	|leerarchivo:n parizq EXP:n1 parder{:RESULT = new LeerArchivo((Exp)n1,nright);:}
+	|EXPRESIONCASTEO:n1{:RESULT=n1;:}%prec casteo
+	|CASTEOEXPLICITO:n1{:RESULT=n1;:}
+	
+	|identificador:n1 punto:n ACCESO:n2{:LinkedList<Exp> lista = (LinkedList<Exp>)n2;
+		lista.add((Exp) new Identificador((String)n1+"|variable",nright));
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+		RESULT= new Acceso(lista,nright); 
+		:}
+	
+	|identificador:n1 LISTACORCHETESVALOR:n2 punto:n ACCESO:n3{:
+		LinkedList<Exp> lista = (LinkedList<Exp>)n3;
+		lista.add((Exp)new AccesoArreglo(new Identificador((String)n1+"|arreglo",n1right),(LinkedList<Exp>)n2,n1right));
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+
+		RESULT =new Acceso(lista,nright);  :}
+
+	|este punto:n ACCESO:n1{:
+		LinkedList<Exp> lista = (LinkedList<Exp>)n1;
+		lista.add((Exp) new This());
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+
+		RESULT =new Acceso(lista,nright);
+		:}
+
+	|LLAMADAEXP:n1 punto:n ACCESO:n2{:
+		LinkedList<Exp> lista = (LinkedList<Exp>)n2;
+		lista.add((Exp)n1);
+		Exp aux = lista.getLast();
+		lista.removeLast();
+		lista.addFirst(aux);
+
+		RESULT =new Acceso(lista,nright);
+		:}
+	|este{:RESULT = new This();:}
+	|LLAMADAEXP:n1{:RESULT=n1;:};
+
+//------------------------------------------------CASTEO EXPLICITO------------------------------------------------------
+CASTEOEXPLICITO::= caststr:n parizq EXP:n1 parder{:RESULT = new Str((Exp)n1,nright);:}
+|todouble:n parizq EXP:n1 parder{:RESULT = new ToDouble((Exp)n1,nright);:}
+|toint:n parizq EXP:n1 parder{:RESULT = new ToInt((Exp)n1,nright);:}
+|tochar:n parizq EXP:n1 parder{:RESULT = new ToChar((Exp)n1,nright);:};
+
+//--------------------------------------------------ACCESO----------------------------------------------------------------
+	ACCESO::= ACCESO:n1 punto AUXILIAR:n2{:LinkedList<Exp> lista = (LinkedList<Exp>)n1;
+		lista.add((Exp)n2);
+		RESULT=lista;
+		:}
+	|AUXILIAR:n1{:LinkedList<Exp> lista = new LinkedList<Exp>();
+		lista.add((Exp)n1);
+		RESULT = lista;
+	:};
+
+	AUXILIAR::= identificador:n{:RESULT= new Identificador((String)n+"|variable",nright);:}
+	|LLAMADAEXP:n1{:RESULT=n1;:}
+	|identificador:n1 LISTACORCHETESVALOR:n2{:RESULT = new AccesoArreglo(new Identificador((String)n1+"|arreglo",n1right),(LinkedList<Exp>)n2,n1right);:};
+
+//-----------------------------------------------INSTANCIA----------------------------------------------------------------
+	INSTANCIAS::= T:n1 LISTACORCHETESVALOR:n2{:RESULT= new Instancia((Tipo)n1,(LinkedList<Exp>)n2,n2right);:}
+	|identificador:n1 parizq LISTPARAMETROSLLAMADA:n2 parder{:RESULT=new InstanciaClase(new Tipo((String)n1),(LinkedList<Exp>)n2,n1right);:}
+	|identificador:n1 parizq parder{:
+		LinkedList<Exp> lista = new LinkedList<Exp>();
+		RESULT=new InstanciaClase(new Tipo((String)n1),lista,n1right);:};
+
+
+	LISTACORCHETESVALOR::= LISTACORCHETESVALOR:n1 corcheteizq EXP:n2 corcheteder{:LinkedList<Exp> lista = (LinkedList<Exp>)n1;
+	lista.add((Exp)n2);
+	RESULT = lista;:}
+	|corcheteizq EXP:n2 corcheteder{:LinkedList<Exp> lista = new LinkedList<Exp>();
+	lista.add((Exp)n2);
+	RESULT = lista;:};
+
+	EXPRESIONCASTEO::= TIPOSPOSIBLES:n1 EXP:n2{:
+		RESULT= new Casteo((Tipo)n1,(Exp)n2,n1right);
+	:};
+
+	TIPOSPOSIBLES::= parizq entero:n1 parder{:RESULT = new Tipo(Tipos.INT);:}
+	|parizq doble parder :n1{:RESULT = new Tipo(Tipos.DOUBLE);:}
+	|parizq character parder :n1{:RESULT = new Tipo(Tipos.CHAR);:};
+
+
+
+T::= entero:n1{:RESULT = new Tipo(Tipos.INT);:}
+	|doble:n1{:RESULT = new Tipo(Tipos.DOUBLE);:}
+	|cadenaString:n1{:RESULT = new Tipo(Tipos.STRING);:}
+	|character:n1{:RESULT = new Tipo(Tipos.CHAR);:}
+	|booleano:n1{:RESULT = new Tipo(Tipos.BOOLEAN);:}
+	|rvoid:n1{:RESULT = new Tipo(Tipos.VOID);:}
+	|identificador:n1{:RESULT=new Tipo((String)n1);:};
+
+//-------------------------------------------------------LLAMADAEXP-----------------------------------------------------
+	LLAMADAEXP::= identificador:ni parizq LISTPARAMETROSLLAMADA:n1 parder{:
+	RESULT= new Llamada((String)ni,(LinkedList<Exp>)n1,niright);
+    :}
+    |identificador:ni parizq parder{:
+                RESULT= new Llamada((String)ni,new LinkedList<Exp>(),niright);
+        :};
+
+//---------------------------------------------------LLAMADA-------------------------------------------------------------
+LLAMADA::= identificador:ni parizq LISTPARAMETROSLLAMADA:n1 parder pcoma{:
+	RESULT= new Llamada((String)ni,(LinkedList<Exp>)n1,niright);
+    :}
+    |identificador:ni parizq parder pcoma{:
+                RESULT= new Llamada((String)ni,new LinkedList<Exp>(),niright);
+        :};
+
+LISTPARAMETROSLLAMADA::= LISTPARAMETROSLLAMADA:n1 coma:n EXP:n2{:
+		LinkedList<Exp> lista = (LinkedList<Exp>) n1;
+		lista.add((Exp)n2);   
+		RESULT = lista;             
+    :}
+|EXP:n1{:
+	LinkedList<Exp> lista = new LinkedList<Exp>();
+	lista.add((Exp)n1);
+	RESULT=lista;
+    :};        
